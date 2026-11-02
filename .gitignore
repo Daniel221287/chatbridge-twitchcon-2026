@@ -3,3 +3,5 @@ coverage/
 *.log
 chatbridge.config.json
 .env*
+.serena/
+live-acceptance-*.json
