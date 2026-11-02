@@ -29,10 +29,10 @@ The smaller installed `qwen3.5:0.8b` also misclassified Polish. Neither result i
 a recommended translation configuration. The original `qwen3:8b` default still
 needs a real quality check on the recording computer.
 
-The first larger-model attempt timed out during cold startup. Load an existing
-model before testing, for example `ollama run qwen3:8b`, then exit the interactive
-prompt with `/bye`. This does not install or download a model. If that model is
-not already installed, select an existing model explicitly or install one yourself.
+The first larger-model attempt timed out during cold startup. First check
+`ollama list` and select a model that is already installed. For example, if
+`qwen3:8b` is listed, load it with `ollama run qwen3:8b` and exit with `/bye`.
+Do not run that example for a missing model: Ollama may download it automatically.
 The bridge retains its eight second per-message fallback to a marked original.
 
 The live acceptance script was subsequently tightened to correlate accepted IRC
