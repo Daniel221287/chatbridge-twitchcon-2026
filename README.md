@@ -185,8 +185,8 @@ no execution-policy changes are needed. See ACCEPTANCE.md for this build's evide
   counter so pending results cannot repopulate cleared overlays.
 - Slow SSE consumers disconnect above 64 KiB buffered output.
 - Server-side pseudonyms keep raw author fields out of anonymized SSE events.
-- Everything, including evidence, stays inside this repository. Repository-only
-  scope takes precedence over global tools, TEAM and external skill files.
+- The main build session and Codex contribution are documented in CODEX_USAGE.md.
+- See LIVE_ACCEPTANCE.md for real Twitch transport evidence and its quality limits.
 
 ## License
 
