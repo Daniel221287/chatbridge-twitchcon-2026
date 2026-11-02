@@ -1,0 +1,16 @@
+{
+  "a": "polish_team",
+  "aLang": "pl",
+  "b": "english_team",
+  "bLang": "en",
+  "port": 8787,
+  "model": "qwen3:8b",
+  "ollamaUrl": "http://127.0.0.1:11434",
+  "queueLength": 30,
+  "filterOptions": {
+    "bots": ["nightbot", "streamelements", "streamlabs", "moobot", "fossabot"],
+    "blocklist": ["idiot", "idiota", "debil", "fuck", "kurwa"],
+    "perUser": 3,
+    "windowMs": 10000
+  }
+}

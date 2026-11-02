@@ -1,0 +1,2 @@
+@badge-info=;badges=;color=#1E90FF;display-name=Zosia;emotes=25:15-19;id=fixture-pl;tmi-sent-ts=1793200000000 :zosia!zosia@zosia.tmi.twitch.tv PRIVMSG #polish_team :dawaj, chopie! Kappa
+@badges=moderator/1;color=#00FF00;display-name=Sam;emotes=;id=fixture-en :sam!sam@sam.tmi.twitch.tv PRIVMSG #english_team :That jump was incredible!

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChatBridge · Overlay</title>
+<style>
+:root{color-scheme:dark;font-family:Segoe UI,system-ui,sans-serif;color:#f5f7ff;--accent:#6de6ce}
+*{box-sizing:border-box}body{margin:0;background:transparent;padding:16px}
+#connection{display:inline-block;background:#101827e6;border-radius:6px;padding:5px 9px;margin-bottom:10px;color:#d2def1;font-size:12px;letter-spacing:.04em}
+#connection[data-state=connected]{display:none}
+#messages{display:flex;flex-direction:column;gap:10px;max-width:640px}
+article{background:rgba(13,19,34,.93);border:1px solid #68799966;border-left:4px solid var(--accent);border-radius:14px;padding:14px 18px;box-shadow:0 5px 20px #0006;animation:arrive .25s ease-out;overflow-wrap:anywhere}
+.meta{font-size:13px;color:#cfdaed;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.name{font-weight:650}.translation{font-size:25px;line-height:1.28;font-weight:650;margin:8px 0 5px}
+.original{font-size:14px;color:#bac8df;line-height:1.4}
+.badge{font-size:11px;border:1px solid #7e8da4;border-radius:5px;padding:2px 5px}
+.leaving{opacity:0;transition:opacity .6s}
+@keyframes arrive{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+@media(prefers-reduced-motion:reduce){article{animation:none}.leaving{transition:none}}
+</style>
+<div id="connection" role="status">ChatBridge · Connecting…</div>
+<main id="messages" aria-live="polite" aria-label="Translated chat"></main>
+<script>
+const params = new URLSearchParams(location.search);
+const side = params.get('for') === 'A' ? 'A' : 'B';
+const limit = Math.floor(Math.max(1, Math.min(30, Number(params.get('max')) || 8)));
+const fade = Math.max(1, Math.min(600, Number(params.get('fade')) || 20)) * 1000;
+const anonymize = params.get('anonymize') === '1';
+const list = document.querySelector('#messages');
+const connection = document.querySelector('#connection');
+const source = new EventSource('/events?for=' + side + (anonymize ? '&anonymize=1' : ''));
+const flags = {pl:'🇵🇱',en:'🇬🇧',de:'🇩🇪',es:'🇪🇸',fr:'🇫🇷',uk:'🇺🇦'};
+const timers = new Map();
+if (side === 'A') document.documentElement.style.setProperty('--accent', '#c6abff');
+const remove = (card) => {
+  clearTimeout(timers.get(card));
+  timers.delete(card);
+  card.remove();
+};
+const clear = () => { for (const card of [...list.children]) remove(card); };
+const status = (text, state) => { connection.textContent = 'ChatBridge · ' + text; connection.dataset.state = state; };
+source.addEventListener('status', ({data}) => {
+  const value = JSON.parse(data).status;
+  status(value === 'demo' ? 'DEMO · scripted translations' : value, value === 'demo' ? 'demo' : value);
+});
+source.addEventListener('error', () => {
+  // Clear stale chat after a disconnect: a missed moderation event must not survive reconnect.
+  clear();
+  status('Connection lost · retrying…', 'reconnecting');
+});
+source.addEventListener('message', ({data}) => {
+  const message = JSON.parse(data);
+  const card = document.createElement('article');
+  card.dataset.id = message.id;
+  const meta = document.createElement('div'); meta.className = 'meta';
+  const flag = document.createElement('span'); flag.textContent = flags[message.sourceLang] || '🌐';
+  flag.setAttribute('aria-label', message.sourceLang || 'Unknown language');
+  const name = document.createElement('span'); name.className = 'name'; name.textContent = message.user;
+  meta.append(flag, name);
+  if (!message.translated || message.demo) {
+    const badge = document.createElement('span'); badge.className = 'badge';
+    badge.textContent = message.demo ? 'demo phrasebook' : message.skipped ? 'original language' : 'not translated';
+    meta.append(badge);
+  }
+  const text = document.createElement('div'); text.className = 'translation'; text.textContent = message.text;
+  const original = document.createElement('div'); original.className = 'original'; original.textContent = message.original;
+  card.append(meta, text, original); list.append(card);
+  while (list.children.length > limit) remove(list.firstElementChild);
+  timers.set(card, setTimeout(() => {
+    card.classList.add('leaving');
+    timers.set(card, setTimeout(() => remove(card), 650));
+  }, fade));
+});
+source.addEventListener('hide', ({data}) => {
+  const {id} = JSON.parse(data);
+  for (const card of [...list.children]) if (card.dataset.id === id) remove(card);
+});
+source.addEventListener('clear', clear);
+window.addEventListener('pagehide', () => { source.close(); clear(); });
+</script>
+</html>

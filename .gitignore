@@ -1,0 +1,5 @@
+node_modules/
+coverage/
+*.log
+chatbridge.config.json
+.env*

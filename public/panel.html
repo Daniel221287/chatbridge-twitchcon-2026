@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChatBridge · Streamer desk</title>
+<style>
+:root{color-scheme:dark;font-family:Segoe UI,system-ui,sans-serif;background:#0b1019;color:#edf2fc;font-size:15px}
+*{box-sizing:border-box}body{margin:0}main{max-width:1160px;margin:auto;padding:32px 24px 64px}
+header{display:flex;justify-content:space-between;align-items:center;gap:20px;border-bottom:1px solid #303a4b;padding-bottom:24px;margin-bottom:24px}
+h1{font-size:30px;letter-spacing:-1px;margin:6px 0}h2{font-size:19px;margin:0 0 14px}h3{font-size:15px;margin:18px 0 8px}
+p{line-height:1.6}.muted,small{color:#aebdd4}.eyebrow{color:#6de6ce;letter-spacing:.14em;font-size:11px;font-weight:700}
+#status{border:1px solid #5b7595;border-radius:20px;padding:8px 12px;font-size:13px;white-space:nowrap}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card{background:#131c2a;border:1px solid #334258;border-radius:15px;padding:22px;min-width:0}
+.direction{border-top:3px solid #6de6ce}.direction:first-child{border-top-color:#c6abff}
+.route{font-size:13px;color:#b8c8df;margin-bottom:18px}.metrics{display:flex;flex-wrap:wrap;gap:20px;margin:18px 0}
+.metric strong{font-size:22px;display:block;font-variant-numeric:tabular-nums}.metric span{font-size:11px;color:#b8c8df;text-transform:uppercase;letter-spacing:.06em}
+button,input,select{font:inherit;border:1px solid #65758f;border-radius:7px;padding:9px 12px;background:#0e1726;color:#f2f6ff}
+button{cursor:pointer;font-weight:600}button:hover{background:#273952}button:disabled{opacity:.5;cursor:wait}
+button.primary{background:#6de6ce;color:#09231e;border-color:#6de6ce}button.danger{border-color:#d18e9b;color:#ffd1dc}
+:focus-visible{outline:3px solid #92c9ff;outline-offset:3px}input,select{width:100%;margin:6px 0 10px}input[readonly]{font-size:12px;color:#c7d8ef}
+label{display:block;font-size:13px;color:#c9d8ed}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.section{margin-top:22px}#notice{min-height:24px;color:#9ff3dc;margin:14px 0}#notice.error{color:#ffb8c7}
+.message{padding:12px 0;border-top:1px solid #344155;display:flex;justify-content:space-between;gap:12px}
+.message p{margin:4px 0;font-size:14px;overflow-wrap:anywhere}.message small{font-size:12px;overflow-wrap:anywhere}.message button{align-self:center}
+.empty{color:#aebdd4;padding:18px 0;font-size:13px}footer{color:#aebdd4;font-size:12px;margin-top:24px}
+@media(max-width:740px){.grid{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}main{padding:22px 14px}.card{padding:18px}.metrics{gap:16px}}
+</style>
+<main>
+<header><div><div class="eyebrow">TWO COMMUNITIES · ONE MOMENT</div><h1>ChatBridge</h1><div class="muted">Streamer desk. The human has the last word.</div></div><span id="status" role="status">Connecting…</span></header>
+<div class="grid">
+<section class="card direction"><h2>Overlay A</h2><div class="route" id="routeA">Loading route…</div>
+<div class="row"><button class="primary" id="pauseA">Pause A</button><button class="danger" data-clear="A">Clear A</button><a id="openA" target="_blank" rel="noopener">Open overlay ↗</a></div>
+<div class="metrics" id="metricsA"></div><label>OBS browser-source URL<input id="urlA" readonly aria-label="Overlay A URL"></label><small>For the streamer on channel A.</small>
+</section>
+<section class="card direction"><h2>Overlay B</h2><div class="route" id="routeB">Loading route…</div>
+<div class="row"><button class="primary" id="pauseB">Pause B</button><button class="danger" data-clear="B">Clear B</button><a id="openB" target="_blank" rel="noopener">Open overlay ↗</a></div>
+<div class="metrics" id="metricsB"></div><label>OBS browser-source URL<input id="urlB" readonly aria-label="Overlay B URL"></label><small>For the streamer on channel B.</small>
+</section>
+</div>
+<div id="notice" role="status" aria-live="polite"></div>
+<div class="row"><label><input id="anonymous" type="checkbox" style="width:auto"> Anonymize author names in OBS URLs</label><button class="danger" id="clearAll">Clear both overlays</button><span class="muted" id="filtered"></span></div>
+<div class="grid section">
+<section class="card"><h2>Try a message</h2><p class="muted">Send through the local bridge. Nothing is posted to Twitch.</p>
+<form id="inject"><label>Source community<select id="channel"><option value="A">Channel A</option><option value="B">Channel B</option></select></label>
+<label>Viewer nickname<input id="user" value="DemoViewer" maxlength="25" pattern="[A-Za-z0-9_]+" required></label>
+<label>Chat message<input id="text" value="dawaj, chopie!" maxlength="200" required></label><button class="primary">Send local test</button></form>
+</section>
+<section class="card"><h2>Keep the room welcoming</h2><p class="muted">Block a word or phrase in both communities. Matching messages are removed and future matches are dropped.</p>
+<form id="block"><label>Word or phrase<input id="word" maxlength="60" required placeholder="Add a moderation term"></label><button>Add to blocklist</button></form>
+<h3>Current blocklist</h3><div class="muted" id="words"></div><p><small>Changes last for this session. Pause holds up to 30 waiting messages; overload drops the oldest. Clear also cancels pending display.</small></p>
+</section>
+</div>
+<section class="card section"><h2>Recent messages</h2><p class="muted">Hide removes a message from both overlays. Only the latest 50 per destination stay in memory.</p><div id="recent"></div></section>
+<footer>Local Ollama · anonymous read-only Twitch · no chat saved to disk · no paid API. Anonymization hides author names; mentions and chat text can still identify people.</footer>
+</main>
+<script>
+let state;
+let stopped = false;
+let timer;
+const el = (id) => document.getElementById(id);
+async function send(route, body) {
+  const response = await fetch(route, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Request failed');
+  return result;
+}
+function notice(text, error = false) { el('notice').textContent = text; el('notice').className = error ? 'error' : ''; }
+async function act(body) {
+  try { await send('/control', body); notice('Applied: ' + body.action); await refresh(); }
+  catch (error) { notice(error.message, true); }
+}
+function urls() {
+  for (const side of ['A','B']) {
+    const url = location.origin + '/overlay?for=' + side + (el('anonymous').checked ? '&anonymize=1' : '');
+    el('url' + side).value = url; el('open' + side).href = url;
+  }
+}
+function render() {
+  el('status').textContent = state.mode === 'demo' ? 'DEMO · scripted phrasebook' : 'Twitch · ' + state.status;
+  el('filtered').textContent = state.filtered + ' messages filtered';
+  el('words').textContent = state.blocklist.join(', ');
+  for (const side of ['A','B']) {
+    const other = side === 'A' ? 'B' : 'A';
+    const stats = state.directions[side];
+    el('route' + side).textContent = '#' + state.channels[other] + ' → #' + state.channels[side] + ' · ' + state.languages[side].toUpperCase();
+    el('pause' + side).textContent = (stats.paused ? 'Resume ' : 'Pause ') + side;
+    el('metrics' + side).replaceChildren();
+    for (const [label, value] of [['queued',stats.queued],['latency',stats.avgLatencyMs + 'ms'],['dropped',stats.dropped + stats.moderated],['done',stats.done]]) {
+      const metric = document.createElement('div'); metric.className = 'metric';
+      const number = document.createElement('strong'); number.textContent = value;
+      const name = document.createElement('span'); name.textContent = label;
+      metric.append(number, name); el('metrics' + side).append(metric);
+    }
+  }
+  const messages = [...state.recent.A, ...state.recent.B].sort((a,b) => b.ts - a.ts);
+  const list = el('recent'); list.replaceChildren();
+  if (!messages.length) { const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'Waiting for the next shared moment…'; list.append(empty); }
+  for (const message of messages) {
+    const row = document.createElement('div'); row.className = 'message';
+    const content = document.createElement('div');
+    const meta = document.createElement('small'); meta.textContent = 'Overlay ' + message.for + ' · ' + message.user + (message.demo ? ' · demo phrasebook' : !message.translated && !message.skipped ? ' · not translated' : '');
+    const text = document.createElement('p'); text.textContent = message.text;
+    const original = document.createElement('small'); original.textContent = message.original;
+    content.append(meta, text, original);
+    const hide = document.createElement('button'); hide.textContent = 'Hide'; hide.setAttribute('aria-label', 'Hide message by ' + message.user);
+    hide.onclick = () => act({action:'hide',id:message.id});
+    row.append(content, hide); list.append(row);
+  }
+  urls();
+}
+async function refresh() {
+  const response = await fetch('/stats');
+  if (!response.ok) throw new Error('Panel disconnected');
+  state = await response.json(); render();
+}
+async function poll() {
+  try { await refresh(); }
+  catch (error) { el('status').textContent = 'Disconnected · retrying'; notice(error.message, true); }
+  if (!stopped) timer = setTimeout(poll, 1500);
+}
+for (const side of ['A','B']) {
+  el('pause' + side).onclick = () => state && act({action:state.directions[side].paused ? 'resume' : 'pause',for:side});
+}
+for (const button of document.querySelectorAll('[data-clear]')) button.onclick = () => act({action:'clear',for:button.dataset.clear});
+el('clearAll').onclick = () => act({action:'clear'});
+el('anonymous').onchange = urls;
+el('inject').onsubmit = async (event) => {
+  event.preventDefault();
+  if (!state) return;
+  try {
+    const result = await send('/inject', {channel:state.channels[el('channel').value],user:el('user').value,text:el('text').value});
+    notice(result.accepted ? 'Local test queued.' : 'Message dropped by a safety filter or rate limit.');
+    await refresh();
+  } catch (error) { notice(error.message, true); }
+};
+el('block').onsubmit = async (event) => { event.preventDefault(); await act({action:'block',word:el('word').value}); el('word').value = ''; };
+window.addEventListener('pagehide', () => { stopped = true; clearTimeout(timer); });
+poll();
+</script>
+</html>
